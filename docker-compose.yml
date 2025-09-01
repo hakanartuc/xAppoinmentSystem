@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: xappointment-postgres
+    environment:
+      POSTGRES_DB: xAppointmentSystem
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - xappointment-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: xappointment-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - xappointment-network
+
+  api:
+    build:
+      context: .
+      dockerfile: src/xAppoinmentSystem.API/Dockerfile
+    container_name: xappointment-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=xAppointmentSystem;Username=postgres;Password=password
+      - ConnectionStrings__Redis=redis:6379
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - xappointment-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  xappointment-network:
+    driver: bridge
